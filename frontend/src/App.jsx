@@ -1,8 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Login from './pages/Login'
 import Home from './pages/Home'
-import RotaPrivada from './components/RotaPrivada'
-import RotaPublica from './components/RotaPublica'
+import RotaPrivada from './routes/RotaPrivada'
+import RotaPublica from './routes/RotaPublica'
 import useSessao from './hooks/useSessao'
 
 const App = () => {
