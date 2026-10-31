@@ -45,7 +45,7 @@ const Login = ({ onEntrar }) => {
   }
 
   return (
-    <main className="grid min-h-screen p-6 text-[#e8ecf4] bg-linear-135 from-[#0f1115] to-[#1a1f2e] place-items-center">
+    <main className="grid min-h-screen p-6 font-[Arial,Helvetica,sans-serif] text-[#e8ecf4] bg-linear-135 from-[#0f1115] to-[#1a1f2e] place-items-center">
       <section className="w-full max-w-[420px] p-8 bg-[#161a22] border border-[#2a3142] rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
         <div className="mb-8 text-[2rem] font-extrabold text-center">
           JOVI<span className="text-[#4f7cff]">Scan</span>
