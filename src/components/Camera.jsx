@@ -1,82 +1,25 @@
-import {useEffect, useRef, useState} from 'react'
+import { useState } from 'react'
+import useCamera from '../hooks/useCamera'
 
 const Camera = ({ tipo, quantidade, onCapturar, onFechar }) => {
-  const videoRef = useRef(null)
-  const canvasRef = useRef(null)
-  const streamRef = useRef(null)
+  const { videoRef, canvasRef, erro, setErro, carregando, capturarImagem } =
+    useCamera()
 
-  const [erro, setErro] = useState('')
-  const [carregando, setCarregando] = useState(true)
   const [nome, setNome] = useState(`${tipo} ${quantidade + 1}`)
   const [validade, setValidade] = useState('')
   const [visibilidade, setVisibilidade] = useState('privado')
 
   const dataHoje = new Date().toISOString().slice(0, 10)
 
-  useEffect(() => {
-    const iniciarCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
-          audio: false,
-        })
-
-        streamRef.current = stream
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream
-        }
-
-        setCarregando(false)
-      } catch {
-        setErro(
-          'Não foi possível acessar a câmera. Verifique a permissão do navegador.'
-        )
-        setCarregando(false)
-      }
-    }
-
-    iniciarCamera()
-
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop())
-      }
-    }
-  }, [])
-
   const capturarFoto = () => {
-    const video = videoRef.current
-    const canvas = canvasRef.current
+    const imagem = capturarImagem()
 
-    if (!video || !canvas || !video.videoWidth || !video.videoHeight) {
-      setErro('A câmera ainda não está pronta. Tente novamente.')
-      return
-    }
+    if (!imagem) return
 
     if (!nome.trim()) {
       setErro('Digite um nome para a digitalização.')
       return
     }
-
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-
-    const contexto = canvas.getContext('2d')
-
-    contexto.drawImage(
-      video,
-      0,
-      0,
-      video.videoWidth,
-      video.videoHeight
-    )
-
-    const imagem = canvas.toDataURL('image/jpeg', 0.85)
 
     onCapturar({
       tipo,
