@@ -1,6 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { buscarUsuarioLogado, fazerLogin, fazerLogout } from '../services/api'
 
 const SESSION_KEY = 'jovi_sessao'
+
+const limparSessaoSalva = () => {
+  localStorage.removeItem(SESSION_KEY)
+  sessionStorage.removeItem(SESSION_KEY)
+}
 
 const useSessao = () => {
   const [usuario, setUsuario] = useState(() => {
@@ -10,19 +16,41 @@ const useSessao = () => {
     return JSON.parse(sessaoLocal || sessaoTemporaria || 'null')
   })
 
-  const entrar = (dadosUsuario, lembrar) => {
+  const token = usuario?.token
+
+  // Confere com a API se a sessão salva ainda é válida.
+  useEffect(() => {
+    if (!token) return
+
+    buscarUsuarioLogado(token).catch((erro) => {
+      if (erro.status === 401) {
+        limparSessaoSalva()
+        setUsuario(null)
+      }
+    })
+  }, [token])
+
+  const entrar = async (email, senha, lembrar) => {
+    const resposta = await fazerLogin(email, senha)
+
+    const dadosUsuario = {
+      nome: resposta.usuario.nome,
+      email: resposta.usuario.email,
+      entrouEm: resposta.entrouEm,
+      token: resposta.token,
+    }
+
     const armazenamento = lembrar ? localStorage : sessionStorage
 
-    localStorage.removeItem(SESSION_KEY)
-    sessionStorage.removeItem(SESSION_KEY)
-
+    limparSessaoSalva()
     armazenamento.setItem(SESSION_KEY, JSON.stringify(dadosUsuario))
     setUsuario(dadosUsuario)
   }
 
   const sair = () => {
-    localStorage.removeItem(SESSION_KEY)
-    sessionStorage.removeItem(SESSION_KEY)
+    if (token) fazerLogout(token).catch(() => {})
+
+    limparSessaoSalva()
     setUsuario(null)
   }
 
