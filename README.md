@@ -4,6 +4,9 @@ Aplicação web para **digitalizar documentos com a câmera do navegador**, orga
 
 Projeto acadêmico — Sprint 4 (Web).
 
+- **Deploy:** <https://joviscan-seven.vercel.app>
+- **GitHub:** <https://github.com/Camera-Nova/Sprint4-Web>
+
 ## Integrantes
 
 Veja [`INTEGRANTES.txt`](INTEGRANTES.txt).
