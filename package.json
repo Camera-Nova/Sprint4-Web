@@ -1,0 +1,9 @@
+{
+  "name": "jovi-scan",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.js"
+  }
+}
