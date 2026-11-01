@@ -1,4 +1,5 @@
-import {useState} from 'react'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 const Login = ({ onEntrar }) => {
   const [email, setEmail] = useState('')
@@ -91,6 +92,13 @@ const Login = ({ onEntrar }) => {
             {carregando ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
+
+        <p className="mt-[1.4rem] mb-0 text-center text-[0.9rem] text-[#a0a8bd]">
+          Não tem conta?{' '}
+          <Link className="font-bold text-[#4f7cff]" to="/cadastro">
+            Criar conta
+          </Link>
+        </p>
 
         <small className="block mt-[1.4rem] text-center text-[#a0a8bd]">
           Teste: <strong>admin@jovi.com</strong> / <strong>Admin123</strong>

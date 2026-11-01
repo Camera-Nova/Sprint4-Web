@@ -42,8 +42,17 @@ const requisitar = async (caminho, { metodo = 'GET', corpo, token } = {}) => {
   return dados
 }
 
-export const fazerLogin = (email, senha) =>
-  requisitar('/auth/login', { metodo: 'POST', corpo: { email, senha } })
+export const fazerLogin = (email, senha, lembrar) =>
+  requisitar('/auth/login', {
+    metodo: 'POST',
+    corpo: { email, senha, lembrar },
+  })
+
+export const fazerCadastro = (nome, email, senha, confirmacao) =>
+  requisitar('/auth/cadastro', {
+    metodo: 'POST',
+    corpo: { nome, email, senha, confirmacao },
+  })
 
 export const buscarUsuarioLogado = (token) =>
   requisitar('/auth/me', { token })

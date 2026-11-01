@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import Depends, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
@@ -20,6 +22,12 @@ def buscar_usuario_por_token(token: str) -> dict:
 
     if not sessao:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Sessão inválida ou expirada.')
+
+    expira_em = sessao.get('expira_em')
+
+    if not expira_em or datetime.fromisoformat(expira_em) <= datetime.now(timezone.utc):
+        banco.remover('sessoes', token=token)
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Sessão expirada. Entre novamente.')
 
     usuario = banco.buscar('usuarios', id=sessao['usuario_id'])
 
