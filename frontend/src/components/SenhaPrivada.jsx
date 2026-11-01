@@ -1,32 +1,32 @@
 import { useState } from 'react'
 
-const SenhaPrivada = ({
-  aberta,
-  senhaAtual,
-  onFechar,
-  onSalvar,
-}) => {
-  const [senha, setSenha] = useState(senhaAtual)
-  const [confirmacao, setConfirmacao] = useState(senhaAtual)
+const SenhaPrivada = ({ aberta, senhaConfigurada, onFechar, onSalvar }) => {
+  const [senhaAtual, setSenhaAtual] = useState('')
+  const [senha, setSenha] = useState('')
+  const [confirmacao, setConfirmacao] = useState('')
   const [erro, setErro] = useState('')
   const [abertaAnterior, setAbertaAnterior] = useState(aberta)
-  const [senhaAnterior, setSenhaAnterior] = useState(senhaAtual)
 
-  if (aberta !== abertaAnterior || senhaAtual !== senhaAnterior) {
+  if (aberta !== abertaAnterior) {
     setAbertaAnterior(aberta)
-    setSenhaAnterior(senhaAtual)
 
     if (aberta) {
-      setSenha(senhaAtual)
-      setConfirmacao(senhaAtual)
+      setSenhaAtual('')
+      setSenha('')
+      setConfirmacao('')
       setErro('')
     }
   }
 
   if (!aberta) return null
 
-  const salvar = (evento) => {
+  const salvar = async (evento) => {
     evento.preventDefault()
+
+    if (senhaConfigurada && !senhaAtual) {
+      setErro('Informe a senha atual.')
+      return
+    }
 
     if (senha.trim().length < 4) {
       setErro('A senha deve ter pelo menos 4 caracteres.')
@@ -38,7 +38,11 @@ const SenhaPrivada = ({
       return
     }
 
-    onSalvar(senha)
+    try {
+      await onSalvar(senha, confirmacao, senhaConfigurada ? senhaAtual : undefined)
+    } catch (erroSalvar) {
+      setErro(erroSalvar.message)
+    }
   }
 
   return (
@@ -62,8 +66,24 @@ const SenhaPrivada = ({
 
         <form onSubmit={salvar}>
           <div className="grid gap-[0.8rem]">
+            {senhaConfigurada && (
+              <div>
+                <label htmlFor="senha-privada-atual">Senha atual</label>
+
+                <input
+                  id="senha-privada-atual"
+                  className="w-full p-3 text-[#e8ecf4] bg-[#1d2230] border border-[#2a3142] rounded-lg"
+                  type="password"
+                  value={senhaAtual}
+                  onChange={(evento) => setSenhaAtual(evento.target.value)}
+                />
+              </div>
+            )}
+
             <div>
-              <label htmlFor="senha-privada">Senha padrão</label>
+              <label htmlFor="senha-privada">
+                {senhaConfigurada ? 'Nova senha padrão' : 'Senha padrão'}
+              </label>
 
               <input
                 id="senha-privada"

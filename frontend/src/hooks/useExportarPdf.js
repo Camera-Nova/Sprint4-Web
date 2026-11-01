@@ -1,7 +1,26 @@
 import { jsPDF } from 'jspdf'
 
+const carregarImagemComoDataUrl = async (url) => {
+  const resposta = await fetch(url)
+
+  if (!resposta.ok) throw new Error('Não foi possível carregar a imagem.')
+
+  const arquivo = await resposta.blob()
+
+  return new Promise((resolver, rejeitar) => {
+    const leitor = new FileReader()
+    leitor.onload = () => resolver(leitor.result)
+    leitor.onerror = rejeitar
+    leitor.readAsDataURL(arquivo)
+  })
+}
+
 const useExportarPdf = () => {
-  const gerarPdf = (documentos) => {
+  const gerarPdf = async (documentos) => {
+    const imagens = await Promise.all(
+      documentos.map((documento) => carregarImagemComoDataUrl(documento.imagem))
+    )
+
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -19,7 +38,7 @@ const useExportarPdf = () => {
       const larguraMaxima = larguraPagina - margem * 2
       const alturaMaxima = 205
 
-      const propriedadesImagem = pdf.getImageProperties(documento.imagem)
+      const propriedadesImagem = pdf.getImageProperties(imagens[indice])
       const proporcao = propriedadesImagem.width / propriedadesImagem.height
 
       let larguraImagem = larguraMaxima
@@ -48,7 +67,7 @@ const useExportarPdf = () => {
       pdf.text(`Privacidade: ${visibilidade}`, margem, 42)
 
       pdf.addImage(
-        documento.imagem,
+        imagens[indice],
         'JPEG',
         posicaoX,
         posicaoY,

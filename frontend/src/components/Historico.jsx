@@ -70,12 +70,16 @@ const Historico = ({
 
             return (
               <li className="flex flex-wrap items-start gap-4 p-4 mb-[0.7rem] bg-[#161a22] border border-[#2a3142] rounded-xl sm:flex-nowrap sm:items-center" key={item.id}>
-                {item.imagem && (
+                {item.imagem ? (
                   <img
                     className="w-[84px] h-16 object-cover border border-[#2a3142] rounded-lg"
                     src={item.imagem}
                     alt={`Digitalização ${item.nome}`}
                   />
+                ) : (
+                  <div className="grid w-[84px] h-16 text-xs font-bold text-[#b9a9ff] bg-[#1d2230] border border-[#2a3142] rounded-lg place-items-center">
+                    Privado
+                  </div>
                 )}
 
                 <div className="flex-1 min-w-0">
@@ -100,14 +104,12 @@ const Historico = ({
                 </div>
 
                 <div className="flex flex-wrap justify-start w-full gap-2 sm:justify-end sm:w-auto">
-                  {item.imagem && (
-                    <button
-                      className="px-[0.7rem] py-[0.55rem] text-[#e8ecf4] bg-[#1d2230] border border-[#2a3142] rounded-lg cursor-pointer"
-                      onClick={() => onVisualizar(item)}
-                    >
-                      Visualizar
-                    </button>
-                  )}
+                  <button
+                    className="px-[0.7rem] py-[0.55rem] text-[#e8ecf4] bg-[#1d2230] border border-[#2a3142] rounded-lg cursor-pointer"
+                    onClick={() => onVisualizar(item)}
+                  >
+                    Visualizar
+                  </button>
 
                   <button
                     className="px-[0.7rem] py-[0.55rem] text-[#e8ecf4] bg-[#1d2230] border border-[#2a3142] rounded-lg cursor-pointer"

@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import ScanActions from '../components/ScanActions'
 import Camera from '../components/Camera'
 import Notificacoes from '../components/Notificacoes'
-import Historico from './Historico'
+import Historico from '../components/Historico'
 import ModalDocumento from '../components/ModalDocumento'
 import Lixeira from '../components/Lixeira'
 import ModalEdicaoDocumento from '../components/ModalEdicaoDocumento'
@@ -25,8 +25,14 @@ const Home = ({ usuario, onSair }) => {
     restaurarDocumento,
     excluirDefinitivamente,
     esvaziarLixeira,
-  } = useDocumentos()
-  const { senhaPrivada, salvarSenhaPrivada } = useSenhaPrivada()
+    erroCarregamento,
+  } = useDocumentos(usuario.token)
+  const {
+    senhaConfigurada,
+    salvarSenhaPrivada,
+    desbloquearDocumento,
+    liberarDocumentosParaExportar,
+  } = useSenhaPrivada(usuario.token)
   const { gerarPdf } = useExportarPdf()
 
   const [tipoSelecionado, setTipoSelecionado] = useState(null)
@@ -36,6 +42,25 @@ const Home = ({ usuario, onSair }) => {
   const [configurandoSenha, setConfigurandoSenha] = useState(false)
   const [lixeiraAberta, setLixeiraAberta] = useState(false)
 
+  useEffect(() => {
+    if (erroCarregamento?.status === 401) onSair()
+  }, [erroCarregamento, onSair])
+
+  const executar = async (acao) => {
+    try {
+      await acao()
+      return true
+    } catch (erro) {
+      if (erro.status === 401) {
+        onSair()
+        return false
+      }
+
+      window.alert(erro.message)
+      return false
+    }
+  }
+
   const abrirCamera = (tipo) => {
     setTipoSelecionado(tipo)
   }
@@ -44,13 +69,14 @@ const Home = ({ usuario, onSair }) => {
     setTipoSelecionado(null)
   }
 
-  const adicionarDigitalizacao = (dados) => {
-    adicionarDocumento(dados)
-    fecharCamera()
+  const adicionarDigitalizacao = async (dados) => {
+    if (await executar(() => adicionarDocumento(dados))) {
+      fecharCamera()
+    }
   }
 
-  const removerDigitalizacao = (id) => {
-    moverParaLixeira(id)
+  const removerDigitalizacao = async (id) => {
+    if (!(await executar(() => moverParaLixeira(id)))) return
 
     if (documentoSelecionado?.id === id) {
       setDocumentoSelecionado(null)
@@ -71,7 +97,7 @@ const Home = ({ usuario, onSair }) => {
         'Deseja excluir este documento permanentemente? Esta ação não pode ser desfeita.'
       )
     ) {
-      excluirDefinitivamente(id)
+      executar(() => excluirDefinitivamente(id))
     }
   }
 
@@ -81,27 +107,47 @@ const Home = ({ usuario, onSair }) => {
         'Deseja excluir permanentemente todos os itens da lixeira?'
       )
     ) {
-      esvaziarLixeira()
+      executar(esvaziarLixeira)
     }
   }
 
-  const salvarEdicaoDocumento = (id, dadosEditados) => {
-    editarDocumento(id, dadosEditados)
+  const salvarEdicaoDocumento = async (id, dadosEditados) => {
+    const salvou = await executar(async () => {
+      const documentoEditado = await editarDocumento(id, dadosEditados)
 
-    if (documentoSelecionado?.id === id) {
-      setDocumentoSelecionado((item) => ({
-        ...item,
-        ...dadosEditados,
-      }))
+      if (documentoSelecionado?.id === id) {
+        setDocumentoSelecionado((atual) => ({
+          ...documentoEditado,
+          imagem: documentoEditado.imagem || atual.imagem,
+        }))
+      }
+    })
+
+    if (salvou) setDocumentoEmEdicao(null)
+  }
+
+  const restaurarDaLixeira = (id) => {
+    executar(() => restaurarDocumento(id))
+  }
+
+  const repassarErro = async (acao) => {
+    try {
+      await acao()
+    } catch (erro) {
+      if (erro.status === 401) {
+        onSair()
+        return
+      }
+
+      throw erro
     }
-
-    setDocumentoEmEdicao(null)
   }
 
-  const salvarSenha = (novaSenha) => {
-    salvarSenhaPrivada(novaSenha)
-    setConfigurandoSenha(false)
-  }
+  const salvarSenha = (senha, confirmacao, senhaAtual) =>
+    repassarErro(async () => {
+      await salvarSenhaPrivada(senha, confirmacao, senhaAtual)
+      setConfigurandoSenha(false)
+    })
 
   const abrirDocumento = (documento) => {
     const visibilidade = documento.visibilidade || 'privado'
@@ -111,7 +157,7 @@ const Home = ({ usuario, onSair }) => {
       return
     }
 
-    if (!senhaPrivada) {
+    if (!senhaConfigurada) {
       window.alert(
         'Antes de acessar documentos privados, defina uma senha padrão.'
       )
@@ -122,25 +168,31 @@ const Home = ({ usuario, onSair }) => {
     setDocumentoBloqueado(documento)
   }
 
-  const liberarDocumentoPrivado = () => {
-    setDocumentoSelecionado(documentoBloqueado)
-    setDocumentoBloqueado(null)
-  }
+  const liberarDocumentoPrivado = (senha) =>
+    repassarErro(async () => {
+      const documentoLiberado = await desbloquearDocumento(
+        documentoBloqueado,
+        senha
+      )
 
-  const exportarDigitalizacoesPdf = () => {
-    const documentosComImagem = historico.filter((item) => item.imagem)
+      setDocumentoSelecionado(documentoLiberado)
+      setDocumentoBloqueado(null)
+    })
 
-    if (documentosComImagem.length === 0) {
-      window.alert('Não há digitalizações com imagem para exportar.')
+  const exportarDigitalizacoesPdf = async () => {
+    if (historico.length === 0) {
+      window.alert('Não há digitalizações para exportar.')
       return
     }
 
-    const possuiDocumentoPrivado = documentosComImagem.some(
-      (item) => (item.visibilidade || 'privado') === 'privado'
+    let documentosParaExportar = historico
+
+    const possuiDocumentoPrivado = historico.some(
+      (item) => item.visibilidade === 'privado'
     )
 
     if (possuiDocumentoPrivado) {
-      if (!senhaPrivada) {
+      if (!senhaConfigurada) {
         window.alert(
           'Defina a senha padrão antes de exportar documentos privados.'
         )
@@ -152,22 +204,35 @@ const Home = ({ usuario, onSair }) => {
         'Digite a senha padrão para exportar documentos privados:'
       )
 
-      if (senhaInformada !== senhaPrivada) {
-        window.alert('Senha incorreta. O PDF não foi exportado.')
+      if (senhaInformada === null) return
+
+      try {
+        documentosParaExportar = await liberarDocumentosParaExportar(
+          historico,
+          senhaInformada
+        )
+      } catch (erro) {
+        if (erro.status === 401) {
+          onSair()
+          return
+        }
+
+        window.alert(`${erro.message} O PDF não foi exportado.`)
         return
       }
     }
 
     try {
-      gerarPdf(documentosComImagem)
+      await gerarPdf(documentosParaExportar)
     } catch {
       window.alert('Ocorreu um erro ao gerar o PDF. Tente novamente.')
     }
   }
 
-  const limparHistorico = () => {
+  const limparHistorico = async () => {
     if (window.confirm('Deseja mover todas as digitalizações para a lixeira?')) {
-      moverTudoParaLixeira()
+      if (!(await executar(moverTudoParaLixeira))) return
+
       setDocumentoSelecionado(null)
       setDocumentoEmEdicao(null)
       setDocumentoBloqueado(null)
@@ -194,6 +259,12 @@ const Home = ({ usuario, onSair }) => {
             organizados, privados ou públicos.
           </p>
         </section>
+
+        {erroCarregamento && erroCarregamento.status !== 401 && (
+          <p className="p-4 text-center text-[#ff7777]">
+            {erroCarregamento.message}
+          </p>
+        )}
 
         <Notificacoes itens={historico} />
 
@@ -224,7 +295,7 @@ const Home = ({ usuario, onSair }) => {
         aberta={lixeiraAberta}
         itens={lixeira}
         onFechar={() => setLixeiraAberta(false)}
-        onRestaurar={restaurarDocumento}
+        onRestaurar={restaurarDaLixeira}
         onExcluirDefinitivamente={confirmarExclusaoDefinitiva}
         onLimparLixeira={limparLixeira}
       />
@@ -242,14 +313,13 @@ const Home = ({ usuario, onSair }) => {
 
       <SenhaPrivada
         aberta={configurandoSenha}
-        senhaAtual={senhaPrivada}
+        senhaConfigurada={senhaConfigurada}
         onFechar={() => setConfigurandoSenha(false)}
         onSalvar={salvarSenha}
       />
 
       <ModalSenhaDocumento
         documento={documentoBloqueado}
-        senhaPadrao={senhaPrivada}
         onFechar={() => setDocumentoBloqueado(null)}
         onLiberar={liberarDocumentoPrivado}
       />

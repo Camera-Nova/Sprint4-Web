@@ -1,12 +1,5 @@
-import {useState} from 'react'
-
-const USUARIOS = [
-  {
-    nome: 'Administrador',
-    email: 'admin@jovi.com',
-    senha: 'Admin123',
-  },
-]
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 const Login = ({ onEntrar }) => {
   const [email, setEmail] = useState('')
@@ -14,34 +7,20 @@ const Login = ({ onEntrar }) => {
   const [lembrar, setLembrar] = useState(false)
   const [erro, setErro] = useState('')
   const [mostrarSenha, setMostrarSenha] = useState(false)
+  const [carregando, setCarregando] = useState(false)
 
-  const validarLogin = (evento) => {
+  const validarLogin = async (evento) => {
     evento.preventDefault()
 
-    const emailNormalizado = email.trim().toLowerCase()
-    const senhaNormalizada = senha.trim()
-
-    const usuarioEncontrado = USUARIOS.find(
-      (usuario) =>
-        usuario.email === emailNormalizado &&
-        usuario.senha === senhaNormalizada
-    )
-
-    if (!usuarioEncontrado) {
-      setErro('E-mail ou senha inválidos.')
-      return
-    }
-
     setErro('')
+    setCarregando(true)
 
-    onEntrar(
-      {
-        nome: usuarioEncontrado.nome,
-        email: usuarioEncontrado.email,
-        entrouEm: new Date().toISOString(),
-      },
-      lembrar
-    )
+    try {
+      await onEntrar(email.trim().toLowerCase(), senha.trim(), lembrar)
+    } catch (erroLogin) {
+      setErro(erroLogin.message)
+      setCarregando(false)
+    }
   }
 
   return (
@@ -106,12 +85,20 @@ const Login = ({ onEntrar }) => {
           {erro && <p className="my-[0.3rem] text-[0.9rem] text-[#ff7777]">{erro}</p>}
 
           <button
-            className="p-[0.8rem] mt-[0.8rem] font-bold text-white bg-[#4f7cff] border-0 rounded-lg cursor-pointer"
+            className="p-[0.8rem] mt-[0.8rem] font-bold text-white bg-[#4f7cff] border-0 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             type="submit"
+            disabled={carregando}
           >
-            Entrar
+            {carregando ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
+
+        <p className="mt-[1.4rem] mb-0 text-center text-[0.9rem] text-[#a0a8bd]">
+          Não tem conta?{' '}
+          <Link className="font-bold text-[#4f7cff]" to="/cadastro">
+            Criar conta
+          </Link>
+        </p>
 
         <small className="block mt-[1.4rem] text-center text-[#a0a8bd]">
           Teste: <strong>admin@jovi.com</strong> / <strong>Admin123</strong>
