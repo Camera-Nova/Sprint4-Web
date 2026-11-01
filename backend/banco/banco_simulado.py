@@ -23,8 +23,6 @@ def criar_dados_iniciais() -> dict:
 
 
 class BancoSimulado:
-    """Banco em memória (dicionários Python) persistido em um arquivo JSON."""
-
     def __init__(self, caminho: Path):
         self.caminho = caminho
         self.trava = threading.Lock()
@@ -46,7 +44,6 @@ class BancoSimulado:
         with open(temporario, 'w', encoding='utf-8') as arquivo:
             json.dump(dados if dados is not None else self.dados, arquivo, ensure_ascii=False, indent=2)
 
-        # Troca atômica: o JSON nunca fica pela metade se o servidor cair.
         temporario.replace(self.caminho)
 
     def listar(self, colecao: str) -> list[dict]:

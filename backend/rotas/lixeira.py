@@ -27,7 +27,6 @@ def listar_lixeira(usuario: dict = Depends(obter_usuario_atual)):
 def restaurar_documento(documento_id: str, usuario: dict = Depends(obter_usuario_atual)):
     buscar_documento_do_usuario(documento_id, usuario, excluido=True)
 
-    # Volta para o topo do histórico.
     [documento] = banco.atualizar(
         'documentos',
         {'excluido_em': None, 'inserido_em': agora()},

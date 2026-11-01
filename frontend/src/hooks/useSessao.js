@@ -18,7 +18,6 @@ const useSessao = () => {
 
   const token = usuario?.token
 
-  // Confere com a API se a sessão salva ainda é válida.
   useEffect(() => {
     if (!token) return
 

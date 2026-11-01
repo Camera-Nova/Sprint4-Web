@@ -3,7 +3,6 @@ export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const extrairMensagemErro = (dados) => {
   if (typeof dados?.detail === 'string') return dados.detail
 
-  // Erros de validação do Pydantic chegam como lista.
   if (Array.isArray(dados?.detail) && dados.detail[0]?.msg) {
     return dados.detail[0].msg.replace(/^Value error, /, '')
   }
@@ -43,8 +42,6 @@ const requisitar = async (caminho, { metodo = 'GET', corpo, token } = {}) => {
   return dados
 }
 
-// Autenticação
-
 export const fazerLogin = (email, senha) =>
   requisitar('/auth/login', { metodo: 'POST', corpo: { email, senha } })
 
@@ -53,8 +50,6 @@ export const buscarUsuarioLogado = (token) =>
 
 export const fazerLogout = (token) =>
   requisitar('/auth/logout', { metodo: 'POST', token })
-
-// Documentos
 
 export const listarDocumentos = (token) =>
   requisitar('/documentos', { token })
@@ -71,10 +66,23 @@ export const moverDocumentoParaLixeira = (token, id) =>
 export const moverTodosParaLixeira = (token) =>
   requisitar('/documentos', { metodo: 'DELETE', token })
 
-export const montarUrlImagem = (token, id) =>
-  `${API_URL}/documentos/${id}/imagem?token=${encodeURIComponent(token)}`
+export const montarUrlImagem = (token, id, chave) => {
+  const parametros = new URLSearchParams({ token })
 
-// Lixeira
+  if (chave) parametros.set('chave', chave)
+
+  return `${API_URL}/documentos/${id}/imagem?${parametros}`
+}
+
+export const desbloquearDocumento = (token, id, senha) =>
+  requisitar(`/documentos/${id}/desbloquear`, {
+    metodo: 'POST',
+    corpo: { senha },
+    token,
+  })
+
+export const liberarExportacao = (token, senha) =>
+  requisitar('/documentos/exportar', { metodo: 'POST', corpo: { senha }, token })
 
 export const listarLixeira = (token) =>
   requisitar('/lixeira', { token })
@@ -87,3 +95,13 @@ export const excluirDaLixeira = (token, id) =>
 
 export const esvaziarLixeira = (token) =>
   requisitar('/lixeira', { metodo: 'DELETE', token })
+
+export const consultarSenhaPrivada = (token) =>
+  requisitar('/usuarios/me/senha-privada', { token })
+
+export const salvarSenhaPrivada = (token, senha, confirmacao) =>
+  requisitar('/usuarios/me/senha-privada', {
+    metodo: 'PUT',
+    corpo: { senha, confirmacao },
+    token,
+  })

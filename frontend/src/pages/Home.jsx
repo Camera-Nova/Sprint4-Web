@@ -27,7 +27,12 @@ const Home = ({ usuario, onSair }) => {
     esvaziarLixeira,
     erroCarregamento,
   } = useDocumentos(usuario.token)
-  const { senhaPrivada, salvarSenhaPrivada } = useSenhaPrivada()
+  const {
+    senhaConfigurada,
+    salvarSenhaPrivada,
+    desbloquearDocumento,
+    liberarDocumentosParaExportar,
+  } = useSenhaPrivada(usuario.token)
   const { gerarPdf } = useExportarPdf()
 
   const [tipoSelecionado, setTipoSelecionado] = useState(null)
@@ -37,12 +42,10 @@ const Home = ({ usuario, onSair }) => {
   const [configurandoSenha, setConfigurandoSenha] = useState(false)
   const [lixeiraAberta, setLixeiraAberta] = useState(false)
 
-  // Sessão expirada no servidor: volta para o login.
   useEffect(() => {
     if (erroCarregamento?.status === 401) onSair()
   }, [erroCarregamento, onSair])
 
-  // Executa uma chamada à API e avisa o usuário se ela falhar.
   const executar = async (acao) => {
     try {
       await acao()
@@ -113,7 +116,10 @@ const Home = ({ usuario, onSair }) => {
       const documentoEditado = await editarDocumento(id, dadosEditados)
 
       if (documentoSelecionado?.id === id) {
-        setDocumentoSelecionado(documentoEditado)
+        setDocumentoSelecionado((atual) => ({
+          ...documentoEditado,
+          imagem: documentoEditado.imagem || atual.imagem,
+        }))
       }
     })
 
@@ -124,10 +130,24 @@ const Home = ({ usuario, onSair }) => {
     executar(() => restaurarDocumento(id))
   }
 
-  const salvarSenha = (novaSenha) => {
-    salvarSenhaPrivada(novaSenha)
-    setConfigurandoSenha(false)
+  const repassarErro = async (acao) => {
+    try {
+      await acao()
+    } catch (erro) {
+      if (erro.status === 401) {
+        onSair()
+        return
+      }
+
+      throw erro
+    }
   }
+
+  const salvarSenha = (senha, confirmacao) =>
+    repassarErro(async () => {
+      await salvarSenhaPrivada(senha, confirmacao)
+      setConfigurandoSenha(false)
+    })
 
   const abrirDocumento = (documento) => {
     const visibilidade = documento.visibilidade || 'privado'
@@ -137,7 +157,7 @@ const Home = ({ usuario, onSair }) => {
       return
     }
 
-    if (!senhaPrivada) {
+    if (!senhaConfigurada) {
       window.alert(
         'Antes de acessar documentos privados, defina uma senha padrão.'
       )
@@ -148,25 +168,31 @@ const Home = ({ usuario, onSair }) => {
     setDocumentoBloqueado(documento)
   }
 
-  const liberarDocumentoPrivado = () => {
-    setDocumentoSelecionado(documentoBloqueado)
-    setDocumentoBloqueado(null)
-  }
+  const liberarDocumentoPrivado = (senha) =>
+    repassarErro(async () => {
+      const documentoLiberado = await desbloquearDocumento(
+        documentoBloqueado,
+        senha
+      )
+
+      setDocumentoSelecionado(documentoLiberado)
+      setDocumentoBloqueado(null)
+    })
 
   const exportarDigitalizacoesPdf = async () => {
-    const documentosComImagem = historico.filter((item) => item.imagem)
-
-    if (documentosComImagem.length === 0) {
-      window.alert('Não há digitalizações com imagem para exportar.')
+    if (historico.length === 0) {
+      window.alert('Não há digitalizações para exportar.')
       return
     }
 
-    const possuiDocumentoPrivado = documentosComImagem.some(
-      (item) => (item.visibilidade || 'privado') === 'privado'
+    let documentosParaExportar = historico
+
+    const possuiDocumentoPrivado = historico.some(
+      (item) => item.visibilidade === 'privado'
     )
 
     if (possuiDocumentoPrivado) {
-      if (!senhaPrivada) {
+      if (!senhaConfigurada) {
         window.alert(
           'Defina a senha padrão antes de exportar documentos privados.'
         )
@@ -178,14 +204,30 @@ const Home = ({ usuario, onSair }) => {
         'Digite a senha padrão para exportar documentos privados:'
       )
 
-      if (senhaInformada !== senhaPrivada) {
-        window.alert('Senha incorreta. O PDF não foi exportado.')
+      if (senhaInformada === null) return
+
+      try {
+        documentosParaExportar = await liberarDocumentosParaExportar(
+          historico,
+          senhaInformada
+        )
+      } catch (erro) {
+        if (erro.status === 401) {
+          onSair()
+          return
+        }
+
+        window.alert(
+          erro.status === 403
+            ? 'Senha incorreta. O PDF não foi exportado.'
+            : erro.message
+        )
         return
       }
     }
 
     try {
-      await gerarPdf(documentosComImagem)
+      await gerarPdf(documentosParaExportar)
     } catch {
       window.alert('Ocorreu um erro ao gerar o PDF. Tente novamente.')
     }
@@ -275,14 +317,12 @@ const Home = ({ usuario, onSair }) => {
 
       <SenhaPrivada
         aberta={configurandoSenha}
-        senhaAtual={senhaPrivada}
         onFechar={() => setConfigurandoSenha(false)}
         onSalvar={salvarSenha}
       />
 
       <ModalSenhaDocumento
         documento={documentoBloqueado}
-        senhaPadrao={senhaPrivada}
         onFechar={() => setDocumentoBloqueado(null)}
         onLiberar={liberarDocumentoPrivado}
       />

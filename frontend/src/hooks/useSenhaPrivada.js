@@ -1,18 +1,47 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import * as api from '../services/api'
 
-const PRIVATE_PASSWORD_KEY = 'jovi_senha_privada'
+const useSenhaPrivada = (token) => {
+  const [senhaConfigurada, setSenhaConfigurada] = useState(false)
 
-const useSenhaPrivada = () => {
-  const [senhaPrivada, setSenhaPrivada] = useState(() => {
-    return localStorage.getItem(PRIVATE_PASSWORD_KEY) || ''
-  })
+  useEffect(() => {
+    if (!token) return
 
-  const salvarSenhaPrivada = (novaSenha) => {
-    localStorage.setItem(PRIVATE_PASSWORD_KEY, novaSenha)
-    setSenhaPrivada(novaSenha)
+    api
+      .consultarSenhaPrivada(token)
+      .then((resposta) => setSenhaConfigurada(resposta.configurada))
+      .catch(() => setSenhaConfigurada(false))
+  }, [token])
+
+  const salvarSenhaPrivada = async (senha, confirmacao) => {
+    await api.salvarSenhaPrivada(token, senha, confirmacao)
+    setSenhaConfigurada(true)
   }
 
-  return { senhaPrivada, salvarSenhaPrivada }
+  const desbloquearDocumento = async (documento, senha) => {
+    const { chave } = await api.desbloquearDocumento(token, documento.id, senha)
+
+    return {
+      ...documento,
+      imagem: api.montarUrlImagem(token, documento.id, chave),
+    }
+  }
+
+  const liberarDocumentosParaExportar = async (documentos, senha) => {
+    const { chave } = await api.liberarExportacao(token, senha)
+
+    return documentos.map((documento) => ({
+      ...documento,
+      imagem: api.montarUrlImagem(token, documento.id, chave),
+    }))
+  }
+
+  return {
+    senhaConfigurada,
+    salvarSenhaPrivada,
+    desbloquearDocumento,
+    liberarDocumentosParaExportar,
+  }
 }
 
 export default useSenhaPrivada

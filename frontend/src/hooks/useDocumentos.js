@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import * as api from '../services/api'
 
-// A API devolve o documento sem a imagem; o front usa a URL protegida por token.
 const prepararDocumento = (token, documento) => ({
   ...documento,
   validade: documento.validade || '',
-  imagem: api.montarUrlImagem(token, documento.id),
+  imagem:
+    documento.visibilidade === 'publico'
+      ? api.montarUrlImagem(token, documento.id)
+      : null,
 })
 
 const useDocumentos = (token) => {
@@ -28,7 +30,6 @@ const useDocumentos = (token) => {
   }, [token])
 
   const adicionarDocumento = async ({ tipo, nome, imagem, validade, visibilidade }) => {
-    // A câmera gera um dataURL; a API recebe a imagem como arquivo.
     const arquivo = await fetch(imagem).then((resposta) => resposta.blob())
 
     const formulario = new FormData()

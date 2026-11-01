@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse
 from pydantic import ValidationError
@@ -11,7 +11,9 @@ from pydantic import ValidationError
 from armazenamento import apagar_imagem, caminho_imagem, salvar_imagem
 from banco import banco
 from dependencias import obter_usuario_atual, obter_usuario_da_imagem
+from liberacoes import conferir_senha_privada, criar_liberacao, liberacao_valida
 from modelos.documento import DocumentoCriacao, DocumentoEdicao, DocumentoSaida
+from modelos.senha_privada import LiberacaoSaida, SenhaPrivadaVerificacao
 
 roteador = APIRouter(prefix='/documentos', tags=['Documentos'])
 
@@ -30,7 +32,6 @@ def buscar_documento_do_usuario(documento_id: str, usuario: dict, excluido: bool
 
 
 def ordenar_por_insercao(documentos: list[dict]) -> list[dict]:
-    # Documentos novos ou restaurados aparecem primeiro.
     return sorted(documentos, key=lambda documento: documento['inserido_em'], reverse=True)
 
 
@@ -40,7 +41,6 @@ def obter_dados_documento(
     validade: Annotated[str, Form()] = '',
     visibilidade: Annotated[str, Form()] = 'privado',
 ) -> DocumentoCriacao:
-    # Os campos chegam como formulário (por causa da imagem) e são validados pelo Pydantic.
     try:
         return DocumentoCriacao(
             tipo=tipo,
@@ -77,7 +77,6 @@ async def criar_documento(
         'nome': dados.nome,
         'validade': dados.validade.isoformat() if dados.validade else None,
         'visibilidade': dados.visibilidade,
-        # Qualidade simulada da digitalização.
         'qualidade': random.randint(85, 100),
         'data': data,
         'inserido_em': data,
@@ -131,12 +130,44 @@ def mover_todos_para_lixeira(usuario: dict = Depends(obter_usuario_atual)):
     return ordenar_por_insercao(documentos)
 
 
+@roteador.post('/exportar', response_model=LiberacaoSaida)
+def liberar_exportacao(
+    dados: SenhaPrivadaVerificacao,
+    usuario: dict = Depends(obter_usuario_atual),
+):
+    conferir_senha_privada(usuario, dados.senha)
+    return criar_liberacao(usuario['id'], None)
+
+
+@roteador.post('/{documento_id}/desbloquear', response_model=LiberacaoSaida)
+def desbloquear_documento(
+    documento_id: str,
+    dados: SenhaPrivadaVerificacao,
+    usuario: dict = Depends(obter_usuario_atual),
+):
+    buscar_documento_do_usuario(documento_id, usuario, excluido=False)
+    conferir_senha_privada(usuario, dados.senha)
+    return criar_liberacao(usuario['id'], {documento_id})
+
+
 @roteador.get('/{documento_id}/imagem', response_class=FileResponse)
-def obter_imagem(documento_id: str, usuario: dict = Depends(obter_usuario_da_imagem)):
+def obter_imagem(
+    documento_id: str,
+    chave: str | None = Query(default=None),
+    usuario: dict = Depends(obter_usuario_da_imagem),
+):
     documento = banco.buscar('documentos', id=documento_id, usuario_id=usuario['id'])
 
     if not documento:
         raise HTTPException(status.HTTP_404_NOT_FOUND, 'Documento não encontrado.')
+
+    if documento['visibilidade'] == 'privado' and not liberacao_valida(
+        chave, usuario['id'], documento_id
+    ):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            'Documento privado. Informe a senha para visualizar.',
+        )
 
     caminho = caminho_imagem(documento['arquivo'])
 

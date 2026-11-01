@@ -17,7 +17,6 @@ const carregarImagemComoDataUrl = async (url) => {
 
 const useExportarPdf = () => {
   const gerarPdf = async (documentos) => {
-    // O jsPDF precisa da imagem em dataURL; a API entrega por URL.
     const imagens = await Promise.all(
       documentos.map((documento) => carregarImagemComoDataUrl(documento.imagem))
     )

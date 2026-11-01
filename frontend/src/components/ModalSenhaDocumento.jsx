@@ -2,7 +2,6 @@ import { useState } from 'react'
 
 const ModalSenhaDocumento = ({
   documento,
-  senhaPadrao,
   onFechar,
   onLiberar,
 }) => {
@@ -23,15 +22,14 @@ const ModalSenhaDocumento = ({
 
   if (!documento) return null
 
-  const validarSenha = (evento) => {
+  const validarSenha = async (evento) => {
     evento.preventDefault()
 
-    if (senha !== senhaPadrao) {
-      setErro('Senha incorreta. Tente novamente.')
-      return
+    try {
+      await onLiberar(senha)
+    } catch (erroLiberacao) {
+      setErro(erroLiberacao.message)
     }
-
-    onLiberar()
   }
 
   return (

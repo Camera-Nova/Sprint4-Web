@@ -2,12 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import ORIGENS_PERMITIDAS
-from rotas import autenticacao, documentos, lixeira
+from rotas import autenticacao, documentos, lixeira, senha_privada
 
 app = FastAPI(title='JOVI Scan API', version='1.0.0')
 
-# Libera o frontend (React/Vite) a chamar a API de outra origem; sem isso o
-# navegador bloqueia as requisições pela política de mesma origem (CORS).
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ORIGENS_PERMITIDAS,
@@ -19,6 +17,7 @@ app.add_middleware(
 app.include_router(autenticacao.roteador)
 app.include_router(documentos.roteador)
 app.include_router(lixeira.roteador)
+app.include_router(senha_privada.roteador)
 
 
 @app.get('/', tags=['Status'])

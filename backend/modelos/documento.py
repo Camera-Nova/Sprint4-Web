@@ -19,7 +19,6 @@ def limpar_nome(valor: str | None) -> str:
 
 
 def converter_validade_vazia(valor):
-    # O formulário envia '' quando o documento não tem vencimento.
     return None if valor == '' else valor
 
 

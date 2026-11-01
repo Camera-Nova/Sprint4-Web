@@ -1,31 +1,24 @@
 import { useState } from 'react'
 
-const SenhaPrivada = ({
-  aberta,
-  senhaAtual,
-  onFechar,
-  onSalvar,
-}) => {
-  const [senha, setSenha] = useState(senhaAtual)
-  const [confirmacao, setConfirmacao] = useState(senhaAtual)
+const SenhaPrivada = ({ aberta, onFechar, onSalvar }) => {
+  const [senha, setSenha] = useState('')
+  const [confirmacao, setConfirmacao] = useState('')
   const [erro, setErro] = useState('')
   const [abertaAnterior, setAbertaAnterior] = useState(aberta)
-  const [senhaAnterior, setSenhaAnterior] = useState(senhaAtual)
 
-  if (aberta !== abertaAnterior || senhaAtual !== senhaAnterior) {
+  if (aberta !== abertaAnterior) {
     setAbertaAnterior(aberta)
-    setSenhaAnterior(senhaAtual)
 
     if (aberta) {
-      setSenha(senhaAtual)
-      setConfirmacao(senhaAtual)
+      setSenha('')
+      setConfirmacao('')
       setErro('')
     }
   }
 
   if (!aberta) return null
 
-  const salvar = (evento) => {
+  const salvar = async (evento) => {
     evento.preventDefault()
 
     if (senha.trim().length < 4) {
@@ -38,7 +31,11 @@ const SenhaPrivada = ({
       return
     }
 
-    onSalvar(senha)
+    try {
+      await onSalvar(senha, confirmacao)
+    } catch (erroSalvar) {
+      setErro(erroSalvar.message)
+    }
   }
 
   return (

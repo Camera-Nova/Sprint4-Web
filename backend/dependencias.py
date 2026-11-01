@@ -37,7 +37,6 @@ def obter_usuario_da_imagem(
     credenciais: HTTPAuthorizationCredentials | None = Depends(esquema_bearer),
     token: str | None = Query(default=None),
 ) -> dict:
-    # A tag <img> não envia cabeçalhos, então a imagem também aceita ?token=.
     token_informado = credenciais.credentials if credenciais else token
 
     if not token_informado:
