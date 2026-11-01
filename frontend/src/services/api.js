@@ -99,9 +99,9 @@ export const esvaziarLixeira = (token) =>
 export const consultarSenhaPrivada = (token) =>
   requisitar('/usuarios/me/senha-privada', { token })
 
-export const salvarSenhaPrivada = (token, senha, confirmacao) =>
+export const salvarSenhaPrivada = (token, senha, confirmacao, senhaAtual) =>
   requisitar('/usuarios/me/senha-privada', {
     metodo: 'PUT',
-    corpo: { senha, confirmacao },
+    corpo: { senhaAtual, senha, confirmacao },
     token,
   })

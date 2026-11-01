@@ -6,6 +6,7 @@ from modelos.base import ModeloBase
 
 
 class SenhaPrivadaEntrada(ModeloBase):
+    senha_atual: str | None = Field(default=None, max_length=128)
     senha: str = Field(max_length=128)
     confirmacao: str = Field(max_length=128)
 

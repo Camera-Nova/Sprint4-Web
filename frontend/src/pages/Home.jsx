@@ -143,9 +143,9 @@ const Home = ({ usuario, onSair }) => {
     }
   }
 
-  const salvarSenha = (senha, confirmacao) =>
+  const salvarSenha = (senha, confirmacao, senhaAtual) =>
     repassarErro(async () => {
-      await salvarSenhaPrivada(senha, confirmacao)
+      await salvarSenhaPrivada(senha, confirmacao, senhaAtual)
       setConfigurandoSenha(false)
     })
 
@@ -317,6 +317,7 @@ const Home = ({ usuario, onSair }) => {
 
       <SenhaPrivada
         aberta={configurandoSenha}
+        senhaConfigurada={senhaConfigurada}
         onFechar={() => setConfigurandoSenha(false)}
         onSalvar={salvarSenha}
       />

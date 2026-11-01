@@ -13,8 +13,8 @@ const useSenhaPrivada = (token) => {
       .catch(() => setSenhaConfigurada(false))
   }, [token])
 
-  const salvarSenhaPrivada = async (senha, confirmacao) => {
-    await api.salvarSenhaPrivada(token, senha, confirmacao)
+  const salvarSenhaPrivada = async (senha, confirmacao, senhaAtual) => {
+    await api.salvarSenhaPrivada(token, senha, confirmacao, senhaAtual)
     setSenhaConfigurada(true)
   }
 
