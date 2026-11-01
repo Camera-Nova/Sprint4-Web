@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, status
 
 from seguranca import gerar_token, verificar_senha
+from tentativas import limpar_tentativas, registrar_falha, verificar_bloqueio
 
 DURACAO_LIBERACAO = timedelta(minutes=5)
 
@@ -11,7 +12,11 @@ liberacoes: dict[str, dict] = {}
 trava = threading.Lock()
 
 
-def conferir_senha_privada(usuario: dict, senha: str) -> None:
+def conferir_senha_privada(
+    usuario: dict,
+    senha: str,
+    mensagem_erro: str = 'Senha incorreta.',
+) -> None:
     senha_privada_hash = usuario.get('senha_privada_hash')
 
     if not senha_privada_hash:
@@ -20,8 +25,13 @@ def conferir_senha_privada(usuario: dict, senha: str) -> None:
             'Defina a senha padrão antes de acessar documentos privados.',
         )
 
+    chave_tentativas = f"senha-privada:{usuario['id']}"
+    verificar_bloqueio(chave_tentativas)
+
     if not verificar_senha(senha, senha_privada_hash):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, 'Senha incorreta. Tente novamente.')
+        registrar_falha(chave_tentativas, status.HTTP_403_FORBIDDEN, mensagem_erro)
+
+    limpar_tentativas(chave_tentativas)
 
 
 def remover_expiradas(momento: datetime) -> None:

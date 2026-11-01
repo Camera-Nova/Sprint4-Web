@@ -217,11 +217,7 @@ const Home = ({ usuario, onSair }) => {
           return
         }
 
-        window.alert(
-          erro.status === 403
-            ? 'Senha incorreta. O PDF não foi exportado.'
-            : erro.message
-        )
+        window.alert(`${erro.message} O PDF não foi exportado.`)
         return
       }
     }

@@ -4,7 +4,8 @@ from banco import banco
 from dependencias import obter_usuario_atual
 from modelos.base import MensagemSaida
 from modelos.senha_privada import SenhaPrivadaEntrada, SenhaPrivadaStatus
-from seguranca import gerar_hash_senha, verificar_senha
+from liberacoes import conferir_senha_privada
+from seguranca import gerar_hash_senha
 
 roteador = APIRouter(prefix='/usuarios/me/senha-privada', tags=['Senha privada'])
 
@@ -19,17 +20,14 @@ def salvar_senha_privada(
     dados: SenhaPrivadaEntrada,
     usuario: dict = Depends(obter_usuario_atual),
 ):
-    senha_privada_hash = usuario.get('senha_privada_hash')
-
-    if senha_privada_hash:
+    if usuario.get('senha_privada_hash'):
         if not dados.senha_atual:
             raise HTTPException(
                 status.HTTP_422_UNPROCESSABLE_ENTITY,
                 'Informe a senha atual para trocar a senha privada.',
             )
 
-        if not verificar_senha(dados.senha_atual, senha_privada_hash):
-            raise HTTPException(status.HTTP_403_FORBIDDEN, 'Senha atual incorreta.')
+        conferir_senha_privada(usuario, dados.senha_atual, 'Senha atual incorreta.')
 
     banco.atualizar(
         'usuarios',
