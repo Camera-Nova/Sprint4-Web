@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import ScanActions from '../components/ScanActions'
 import Camera from '../components/Camera'
@@ -25,7 +25,8 @@ const Home = ({ usuario, onSair }) => {
     restaurarDocumento,
     excluirDefinitivamente,
     esvaziarLixeira,
-  } = useDocumentos()
+    erroCarregamento,
+  } = useDocumentos(usuario.token)
   const { senhaPrivada, salvarSenhaPrivada } = useSenhaPrivada()
   const { gerarPdf } = useExportarPdf()
 
@@ -36,6 +37,27 @@ const Home = ({ usuario, onSair }) => {
   const [configurandoSenha, setConfigurandoSenha] = useState(false)
   const [lixeiraAberta, setLixeiraAberta] = useState(false)
 
+  // Sessão expirada no servidor: volta para o login.
+  useEffect(() => {
+    if (erroCarregamento?.status === 401) onSair()
+  }, [erroCarregamento, onSair])
+
+  // Executa uma chamada à API e avisa o usuário se ela falhar.
+  const executar = async (acao) => {
+    try {
+      await acao()
+      return true
+    } catch (erro) {
+      if (erro.status === 401) {
+        onSair()
+        return false
+      }
+
+      window.alert(erro.message)
+      return false
+    }
+  }
+
   const abrirCamera = (tipo) => {
     setTipoSelecionado(tipo)
   }
@@ -44,13 +66,14 @@ const Home = ({ usuario, onSair }) => {
     setTipoSelecionado(null)
   }
 
-  const adicionarDigitalizacao = (dados) => {
-    adicionarDocumento(dados)
-    fecharCamera()
+  const adicionarDigitalizacao = async (dados) => {
+    if (await executar(() => adicionarDocumento(dados))) {
+      fecharCamera()
+    }
   }
 
-  const removerDigitalizacao = (id) => {
-    moverParaLixeira(id)
+  const removerDigitalizacao = async (id) => {
+    if (!(await executar(() => moverParaLixeira(id)))) return
 
     if (documentoSelecionado?.id === id) {
       setDocumentoSelecionado(null)
@@ -71,7 +94,7 @@ const Home = ({ usuario, onSair }) => {
         'Deseja excluir este documento permanentemente? Esta ação não pode ser desfeita.'
       )
     ) {
-      excluirDefinitivamente(id)
+      executar(() => excluirDefinitivamente(id))
     }
   }
 
@@ -81,21 +104,24 @@ const Home = ({ usuario, onSair }) => {
         'Deseja excluir permanentemente todos os itens da lixeira?'
       )
     ) {
-      esvaziarLixeira()
+      executar(esvaziarLixeira)
     }
   }
 
-  const salvarEdicaoDocumento = (id, dadosEditados) => {
-    editarDocumento(id, dadosEditados)
+  const salvarEdicaoDocumento = async (id, dadosEditados) => {
+    const salvou = await executar(async () => {
+      const documentoEditado = await editarDocumento(id, dadosEditados)
 
-    if (documentoSelecionado?.id === id) {
-      setDocumentoSelecionado((item) => ({
-        ...item,
-        ...dadosEditados,
-      }))
-    }
+      if (documentoSelecionado?.id === id) {
+        setDocumentoSelecionado(documentoEditado)
+      }
+    })
 
-    setDocumentoEmEdicao(null)
+    if (salvou) setDocumentoEmEdicao(null)
+  }
+
+  const restaurarDaLixeira = (id) => {
+    executar(() => restaurarDocumento(id))
   }
 
   const salvarSenha = (novaSenha) => {
@@ -127,7 +153,7 @@ const Home = ({ usuario, onSair }) => {
     setDocumentoBloqueado(null)
   }
 
-  const exportarDigitalizacoesPdf = () => {
+  const exportarDigitalizacoesPdf = async () => {
     const documentosComImagem = historico.filter((item) => item.imagem)
 
     if (documentosComImagem.length === 0) {
@@ -159,15 +185,16 @@ const Home = ({ usuario, onSair }) => {
     }
 
     try {
-      gerarPdf(documentosComImagem)
+      await gerarPdf(documentosComImagem)
     } catch {
       window.alert('Ocorreu um erro ao gerar o PDF. Tente novamente.')
     }
   }
 
-  const limparHistorico = () => {
+  const limparHistorico = async () => {
     if (window.confirm('Deseja mover todas as digitalizações para a lixeira?')) {
-      moverTudoParaLixeira()
+      if (!(await executar(moverTudoParaLixeira))) return
+
       setDocumentoSelecionado(null)
       setDocumentoEmEdicao(null)
       setDocumentoBloqueado(null)
@@ -194,6 +221,12 @@ const Home = ({ usuario, onSair }) => {
             organizados, privados ou públicos.
           </p>
         </section>
+
+        {erroCarregamento && erroCarregamento.status !== 401 && (
+          <p className="p-4 text-center text-[#ff7777]">
+            {erroCarregamento.message}
+          </p>
+        )}
 
         <Notificacoes itens={historico} />
 
@@ -224,7 +257,7 @@ const Home = ({ usuario, onSair }) => {
         aberta={lixeiraAberta}
         itens={lixeira}
         onFechar={() => setLixeiraAberta(false)}
-        onRestaurar={restaurarDocumento}
+        onRestaurar={restaurarDaLixeira}
         onExcluirDefinitivamente={confirmarExclusaoDefinitiva}
         onLimparLixeira={limparLixeira}
       />

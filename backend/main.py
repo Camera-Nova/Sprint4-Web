@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import ORIGENS_PERMITIDAS
-from rotas import autenticacao
+from rotas import autenticacao, documentos, lixeira
 
 app = FastAPI(title='JOVI Scan API', version='1.0.0')
 
@@ -17,6 +17,8 @@ app.add_middleware(
 )
 
 app.include_router(autenticacao.roteador)
+app.include_router(documentos.roteador)
+app.include_router(lixeira.roteador)
 
 
 @app.get('/', tags=['Status'])

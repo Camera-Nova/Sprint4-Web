@@ -1,15 +1,11 @@
 import re
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-from pydantic.alias_generators import to_camel
+from pydantic import Field, field_validator
+
+from modelos.base import MensagemSaida, ModeloBase
 
 PADRAO_EMAIL = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
-
-
-class ModeloBase(BaseModel):
-    # Campos em snake_case no Python e camelCase no JSON (ex.: entrou_em -> entrouEm).
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class LoginEntrada(ModeloBase):
@@ -49,5 +45,4 @@ class LoginSaida(ModeloBase):
     entrou_em: datetime
 
 
-class MensagemSaida(ModeloBase):
-    mensagem: str
+__all__ = ['LoginEntrada', 'LoginSaida', 'MensagemSaida', 'UsuarioSaida']

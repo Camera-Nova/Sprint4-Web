@@ -1,38 +1,13 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from banco import banco
+from dependencias import obter_token, obter_usuario_atual
 from modelos.autenticacao import LoginEntrada, LoginSaida, MensagemSaida, UsuarioSaida
 from seguranca import gerar_token, verificar_senha
 
 roteador = APIRouter(prefix='/auth', tags=['Autenticação'])
-
-esquema_bearer = HTTPBearer(auto_error=False)
-
-
-def obter_token(
-    credenciais: HTTPAuthorizationCredentials | None = Depends(esquema_bearer),
-) -> str:
-    if not credenciais:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Token não informado.')
-
-    return credenciais.credentials
-
-
-def obter_usuario_atual(token: str = Depends(obter_token)) -> dict:
-    sessao = banco.buscar('sessoes', token=token)
-
-    if not sessao:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Sessão inválida ou expirada.')
-
-    usuario = banco.buscar('usuarios', id=sessao['usuario_id'])
-
-    if not usuario:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Usuário não encontrado.')
-
-    return usuario
 
 
 @roteador.post('/login', response_model=LoginSaida)

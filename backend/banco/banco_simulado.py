@@ -18,6 +18,7 @@ def criar_dados_iniciais() -> dict:
             }
         ],
         'sessoes': [],
+        'documentos': [],
     }
 
 
@@ -52,6 +53,14 @@ class BancoSimulado:
         with self.trava:
             return deepcopy(self.dados.get(colecao, []))
 
+    def filtrar(self, colecao: str, **filtros) -> list[dict]:
+        with self.trava:
+            return [
+                deepcopy(item)
+                for item in self.dados.get(colecao, [])
+                if all(item.get(campo) == valor for campo, valor in filtros.items())
+            ]
+
     def buscar(self, colecao: str, **filtros) -> dict | None:
         with self.trava:
             for item in self.dados.get(colecao, []):
@@ -64,6 +73,20 @@ class BancoSimulado:
             self.dados.setdefault(colecao, []).append(deepcopy(item))
             self.salvar()
         return item
+
+    def atualizar(self, colecao: str, campos: dict, **filtros) -> list[dict]:
+        atualizados = []
+
+        with self.trava:
+            for item in self.dados.get(colecao, []):
+                if all(item.get(campo) == valor for campo, valor in filtros.items()):
+                    item.update(deepcopy(campos))
+                    atualizados.append(deepcopy(item))
+
+            if atualizados:
+                self.salvar()
+
+        return atualizados
 
     def remover(self, colecao: str, **filtros) -> int:
         with self.trava:

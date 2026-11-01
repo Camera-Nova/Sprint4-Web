@@ -1,102 +1,97 @@
 import { useEffect, useState } from 'react'
+import * as api from '../services/api'
 
-const STORAGE_KEY = 'jovi_historico'
-const TRASH_KEY = 'jovi_lixeira'
+// A API devolve o documento sem a imagem; o front usa a URL protegida por token.
+const prepararDocumento = (token, documento) => ({
+  ...documento,
+  validade: documento.validade || '',
+  imagem: api.montarUrlImagem(token, documento.id),
+})
 
-const useDocumentos = () => {
-  const [historico, setHistorico] = useState(() => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-  })
+const useDocumentos = (token) => {
+  const [historico, setHistorico] = useState([])
+  const [lixeira, setLixeira] = useState([])
+  const [erroCarregamento, setErroCarregamento] = useState(null)
 
-  const [lixeira, setLixeira] = useState(() => {
-    return JSON.parse(localStorage.getItem(TRASH_KEY) || '[]')
-  })
+  const comImagem = (documento) => prepararDocumento(token, documento)
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(historico))
-  }, [historico])
+    if (!token) return
 
-  useEffect(() => {
-    localStorage.setItem(TRASH_KEY, JSON.stringify(lixeira))
-  }, [lixeira])
+    Promise.all([api.listarDocumentos(token), api.listarLixeira(token)])
+      .then(([documentos, excluidos]) => {
+        setHistorico(documentos.map((item) => prepararDocumento(token, item)))
+        setLixeira(excluidos.map((item) => prepararDocumento(token, item)))
+        setErroCarregamento(null)
+      })
+      .catch(setErroCarregamento)
+  }, [token])
 
-  const adicionarDocumento = ({ tipo, nome, imagem, validade, visibilidade }) => {
-    const qualidade = Math.round(85 + Math.random() * 15)
+  const adicionarDocumento = async ({ tipo, nome, imagem, validade, visibilidade }) => {
+    // A câmera gera um dataURL; a API recebe a imagem como arquivo.
+    const arquivo = await fetch(imagem).then((resposta) => resposta.blob())
 
-    const novoDocumento = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      tipo,
-      nome,
-      imagem,
-      validade,
-      visibilidade,
-      qualidade,
-      data: new Date().toISOString(),
-    }
+    const formulario = new FormData()
+    formulario.append('tipo', tipo)
+    formulario.append('nome', nome)
+    formulario.append('validade', validade)
+    formulario.append('visibilidade', visibilidade)
+    formulario.append('imagem', arquivo, 'digitalizacao.jpg')
 
-    setHistorico((itens) => [novoDocumento, ...itens])
+    const novoDocumento = await api.criarDocumento(token, formulario)
+
+    setHistorico((itens) => [comImagem(novoDocumento), ...itens])
   }
 
-  const editarDocumento = (id, dadosEditados) => {
-    setHistorico((itens) =>
-      itens.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              ...dadosEditados,
-            }
-          : item
-      )
+  const editarDocumento = async (id, dadosEditados) => {
+    const documentoEditado = comImagem(
+      await api.editarDocumento(token, id, dadosEditados)
     )
+
+    setHistorico((itens) =>
+      itens.map((item) => (item.id === id ? documentoEditado : item))
+    )
+
+    return documentoEditado
   }
 
-  const moverParaLixeira = (id) => {
-    const documentoRemovido = historico.find((item) => item.id === id)
-
-    if (!documentoRemovido) return
-
-    const itemNaLixeira = {
-      ...documentoRemovido,
-      excluidoEm: new Date().toISOString(),
-    }
+  const moverParaLixeira = async (id) => {
+    const documentoRemovido = await api.moverDocumentoParaLixeira(token, id)
 
     setHistorico((itens) => itens.filter((item) => item.id !== id))
-    setLixeira((itens) => [itemNaLixeira, ...itens])
+    setLixeira((itens) => [comImagem(documentoRemovido), ...itens])
   }
 
-  const moverTudoParaLixeira = () => {
-    const itensExcluidos = historico.map((item) => ({
-      ...item,
-      excluidoEm: new Date().toISOString(),
-    }))
+  const moverTudoParaLixeira = async () => {
+    const documentosRemovidos = await api.moverTodosParaLixeira(token)
 
-    setLixeira((itens) => [...itensExcluidos, ...itens])
     setHistorico([])
+    setLixeira((itens) => [...documentosRemovidos.map(comImagem), ...itens])
   }
 
-  const restaurarDocumento = (id) => {
-    const documentoRestaurado = lixeira.find((item) => item.id === id)
-
-    if (!documentoRestaurado) return
-
-    const documentoSemDataExclusao = { ...documentoRestaurado }
-    delete documentoSemDataExclusao.excluidoEm
+  const restaurarDocumento = async (id) => {
+    const documentoRestaurado = await api.restaurarDaLixeira(token, id)
 
     setLixeira((itens) => itens.filter((item) => item.id !== id))
-    setHistorico((itens) => [documentoSemDataExclusao, ...itens])
+    setHistorico((itens) => [comImagem(documentoRestaurado), ...itens])
   }
 
-  const excluirDefinitivamente = (id) => {
+  const excluirDefinitivamente = async (id) => {
+    await api.excluirDaLixeira(token, id)
+
     setLixeira((itens) => itens.filter((item) => item.id !== id))
   }
 
-  const esvaziarLixeira = () => {
+  const esvaziarLixeira = async () => {
+    await api.esvaziarLixeira(token)
+
     setLixeira([])
   }
 
   return {
     historico,
     lixeira,
+    erroCarregamento,
     adicionarDocumento,
     editarDocumento,
     moverParaLixeira,

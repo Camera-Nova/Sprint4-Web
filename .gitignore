@@ -36,3 +36,6 @@ backend/banco/dados.tmp
 
 # Guia interno de desenvolvimento
 AGENTS.md
+
+# Imagens enviadas para a API
+backend/uploads/
