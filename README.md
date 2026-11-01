@@ -51,8 +51,11 @@ O frontend conversa com a API pelo endereço definido em `VITE_API_URL`. O backe
 │   │   └── services/      # api.js (chamadas para o backend)
 │   ├── .env.example
 │   └── package.json
+├── api/
+│   └── index.py           # entrada da API na Vercel (monta o backend em /api)
 ├── scripts/
 │   └── dev.js             # sobe backend e frontend juntos
+├── vercel.json            # configuração do deploy na Vercel
 └── package.json           # npm run dev da raiz
 ```
 
@@ -129,6 +132,8 @@ O arquivo `.env` define o endereço da API:
 VITE_API_URL=http://localhost:8000
 ```
 
+No build de produção (`npm run build`) vale o `frontend/.env.production`, que aponta para `/api` (a API no mesmo domínio, como na Vercel).
+
 ### Variáveis de ambiente do backend (opcionais)
 
 | Variável | Padrão | Descrição |
@@ -163,6 +168,29 @@ npm run dev
 | `npm run build` | `frontend/` | Gera a versão de produção em `dist/` |
 | `npm run preview` | `frontend/` | Serve a versão de produção localmente |
 | `npm run lint` | `frontend/` | Verifica o código com ESLint |
+
+---
+
+## Deploy na Vercel
+
+O frontend e a API ficam no **mesmo projeto da Vercel**:
+
+- o frontend é gerado com `npm run build` em `frontend/` e servido como site estático (rotas internas, como `/cadastro`, caem no `index.html`);
+- a API roda como função Python (`api/index.py`), que monta o backend em `/api` (ex.: `/api/auth/login`).
+
+As configurações estão em `vercel.json`; não é preciso definir variáveis de ambiente no painel.
+
+Para publicar pelo terminal, na raiz do projeto:
+
+```bash
+npm i -g vercel
+vercel login
+vercel --prod
+```
+
+Ou importe o repositório em <https://vercel.com/new> mantendo a raiz do projeto como *Root Directory*.
+
+> **Limitação:** na Vercel só a pasta `/tmp` aceita escrita, então o banco simulado e as imagens ficam lá e **podem ser apagados** quando a função reinicia (por exemplo, depois de alguns minutos sem uso). O usuário de teste `admin@jovi.com` / `Admin123` é recriado automaticamente; contas e documentos novos podem sumir. Para guardar os dados de forma permanente, seria preciso trocar o banco simulado por um banco de dados real.
 
 ---
 
