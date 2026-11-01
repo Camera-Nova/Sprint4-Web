@@ -179,3 +179,16 @@ npm run dev
 9. Clique em **Sair** para encerrar a sessão.
 
 > A câmera do navegador só funciona em `localhost` ou em sites com HTTPS. Para testar no celular, use um endereço HTTPS.
+
+---
+
+## Uso de Inteligência Artificial
+
+Neste projeto foi utilizada Inteligência Artificial (Claude, da Anthropic, via Claude Code) como apoio ao desenvolvimento. A IA foi usada para:
+
+- **Montar o README**: escrever a documentação do projeto (como funciona, como baixar, como executar e como utilizar).
+- **Juntar os comandos do backend e do frontend**: criar o script `scripts/dev.js` e o `package.json` da raiz, para que `npm run dev` suba a API e a aplicação ao mesmo tempo.
+- **Organizar as pastas**: estruturar o projeto em `frontend/` e `backend/` e separar o código em `hooks/`, `routes/` e `services/` no frontend, e `banco/`, `modelos/` e `rotas/` no backend.
+- **Refatorar o código**: melhorar a organização e a legibilidade dos componentes e das rotas, mantendo o funcionamento da aplicação.
+
+A IA não desenvolveu as funcionalidades principais da aplicação: seu papel foi refatorar o código já existente para melhorar a legibilidade e criar pequenos ajustes pontuais (o script que une os comandos de execução). Tudo o que foi feito com apoio da IA foi revisado pelos integrantes do grupo.
