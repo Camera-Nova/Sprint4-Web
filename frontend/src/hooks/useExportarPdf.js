@@ -17,9 +17,11 @@ const carregarImagemComoDataUrl = async (url) => {
 
 const useExportarPdf = () => {
   const gerarPdf = async (documentos) => {
-    const imagens = await Promise.all(
-      documentos.map((documento) => carregarImagemComoDataUrl(documento.imagem))
-    )
+    const imagens = []
+
+    for (const documento of documentos) {
+      imagens.push(await carregarImagemComoDataUrl(documento.imagem))
+    }
 
     const pdf = new jsPDF({
       orientation: 'portrait',
