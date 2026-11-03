@@ -4,11 +4,6 @@ from pathlib import Path
 
 from fastapi import FastAPI
 
-# Na Vercel só /tmp aceita escrita: o banco simulado e as imagens ficam lá
-# (os dados podem sumir quando a função reinicia).
-os.environ.setdefault('CAMINHO_DADOS', '/tmp/jovi/dados.json')
-os.environ.setdefault('PASTA_UPLOADS', '/tmp/jovi/uploads')
-
 if not os.getenv('JWT_SECRET'):
     raise RuntimeError('Defina a variável de ambiente JWT_SECRET no projeto da Vercel.')
 

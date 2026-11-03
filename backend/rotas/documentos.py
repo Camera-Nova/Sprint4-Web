@@ -5,10 +5,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from pydantic import ValidationError
 
-from armazenamento import apagar_imagem, caminho_imagem, salvar_imagem
+from armazenamento import apagar_imagem, baixar_imagem, salvar_imagem, tipo_imagem
 from banco import banco
 from dependencias import obter_usuario_atual, obter_usuario_da_imagem
 from liberacoes import conferir_senha_privada, criar_liberacao, liberacao_valida
@@ -150,7 +150,7 @@ def desbloquear_documento(
     return criar_liberacao(usuario['id'], {documento_id})
 
 
-@roteador.get('/{documento_id}/imagem', response_class=FileResponse)
+@roteador.get('/{documento_id}/imagem', response_class=Response)
 def obter_imagem(
     documento_id: str,
     chave: str | None = Query(default=None),
@@ -169,12 +169,12 @@ def obter_imagem(
             'Documento privado. Informe a senha para visualizar.',
         )
 
-    caminho = caminho_imagem(documento['arquivo'])
+    conteudo = baixar_imagem(documento['arquivo'])
 
-    if not caminho.exists():
+    if conteudo is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, 'Imagem não encontrada.')
 
-    return FileResponse(caminho)
+    return Response(conteudo, media_type=tipo_imagem(documento['arquivo']))
 
 
 def apagar_documentos(documentos: list[dict]) -> None:

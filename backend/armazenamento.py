@@ -1,14 +1,17 @@
 from pathlib import Path
 
 from fastapi import HTTPException, UploadFile, status
+from storage3.exceptions import StorageApiError
 
-from config import PASTA_UPLOADS, TAMANHO_MAXIMO_IMAGEM
+from banco import supabase
+from config import SUPABASE_BUCKET, TAMANHO_MAXIMO_IMAGEM
 
 EXTENSOES_POR_TIPO = {
     'image/jpeg': '.jpg',
     'image/png': '.png',
     'image/webp': '.webp',
 }
+TIPOS_POR_EXTENSAO = {extensao: tipo for tipo, extensao in EXTENSOES_POR_TIPO.items()}
 
 
 async def salvar_imagem(imagem: UploadFile, documento_id: str) -> str:
@@ -31,17 +34,27 @@ async def salvar_imagem(imagem: UploadFile, documento_id: str) -> str:
             'A imagem deve ter no máximo 5 MB.',
         )
 
-    PASTA_UPLOADS.mkdir(parents=True, exist_ok=True)
     nome_arquivo = f'{documento_id}{extensao}'
-    (PASTA_UPLOADS / nome_arquivo).write_bytes(conteudo)
+    supabase.storage.from_(SUPABASE_BUCKET).upload(
+        nome_arquivo,
+        conteudo,
+        {'content-type': imagem.content_type},
+    )
 
     return nome_arquivo
 
 
-def caminho_imagem(nome_arquivo: str) -> Path:
-    return PASTA_UPLOADS / nome_arquivo
+def baixar_imagem(nome_arquivo: str) -> bytes | None:
+    try:
+        return supabase.storage.from_(SUPABASE_BUCKET).download(nome_arquivo)
+    except StorageApiError:
+        return None
+
+
+def tipo_imagem(nome_arquivo: str) -> str:
+    return TIPOS_POR_EXTENSAO[Path(nome_arquivo).suffix]
 
 
 def apagar_imagem(nome_arquivo: str | None) -> None:
     if nome_arquivo:
-        caminho_imagem(nome_arquivo).unlink(missing_ok=True)
+        supabase.storage.from_(SUPABASE_BUCKET).remove([nome_arquivo])

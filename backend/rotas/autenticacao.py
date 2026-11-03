@@ -54,15 +54,14 @@ def cadastrar(dados: CadastroEntrada):
     if banco.buscar('usuarios', email=dados.email):
         raise HTTPException(status.HTTP_409_CONFLICT, 'Já existe uma conta com este e-mail.')
 
-    usuarios = banco.listar('usuarios')
-    usuario = {
-        'id': max((item['id'] for item in usuarios), default=0) + 1,
-        'nome': dados.nome,
-        'email': dados.email,
-        'senha_hash': gerar_hash_senha(dados.senha),
-    }
-
-    banco.inserir('usuarios', usuario)
+    usuario = banco.inserir(
+        'usuarios',
+        {
+            'nome': dados.nome,
+            'email': dados.email,
+            'senha_hash': gerar_hash_senha(dados.senha),
+        },
+    )
 
     return criar_sessao(usuario, lembrar=False)
 
