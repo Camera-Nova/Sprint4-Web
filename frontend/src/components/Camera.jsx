@@ -31,9 +31,9 @@ const Camera = ({ tipo, quantidade, onCapturar, onFechar }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-100 grid p-4 bg-black/80 place-items-center">
-      <section className="w-full max-w-[760px] p-6 text-[#e8ecf4] bg-[#161a22] border border-[#2a3142] rounded-2xl">
-        <div className="flex items-start justify-between gap-4">
+    <div className="fixed inset-x-0 top-0 z-100 flex items-center justify-center h-dvh p-3 bg-black/80 sm:p-4">
+      <section className="flex flex-col w-full max-w-[760px] max-h-full p-4 text-[#e8ecf4] bg-[#161a22] border border-[#2a3142] rounded-2xl sm:p-6">
+        <div className="flex items-start justify-between gap-4 shrink-0">
           <div>
             <h2 className="m-0 text-[1.5em] font-bold">Digitalizar: {tipo}</h2>
             <p className="mt-[0.4rem] mb-4 text-[#a0a8bd]">Posicione o documento dentro da área da câmera.</p>
@@ -44,67 +44,69 @@ const Camera = ({ tipo, quantidade, onCapturar, onFechar }) => {
           </button>
         </div>
 
-        <div className="grid min-h-[280px] overflow-hidden bg-[#0f1115] border border-[#2a3142] rounded-xl place-items-center">
-          {carregando && !erro && (
-            <p className="p-4 text-center text-[#a0a8bd]">Iniciando câmera...</p>
-          )}
+        <div className="min-h-0 overflow-y-auto overscroll-contain">
+          <div className="grid min-h-[200px] overflow-hidden bg-[#0f1115] border border-[#2a3142] rounded-xl place-items-center">
+            {carregando && !erro && (
+              <p className="p-4 text-center text-[#a0a8bd]">Iniciando câmera...</p>
+            )}
 
-          {erro ? (
-            <p className="p-4 text-center text-[#ff7777]">{erro}</p>
-          ) : (
-            <video
-              ref={videoRef}
-              className="w-full h-full max-h-[480px] object-contain"
-              autoPlay
-              playsInline
-              muted
-            />
-          )}
+            {erro ? (
+              <p className="p-4 text-center text-[#ff7777]">{erro}</p>
+            ) : (
+              <video
+                ref={videoRef}
+                className="w-full h-full max-h-[min(45dvh,480px)] object-contain"
+                autoPlay
+                playsInline
+                muted
+              />
+            )}
+          </div>
+
+          <canvas ref={canvasRef} className="hidden" />
+
+          <div className="grid grid-cols-1 gap-[0.8rem] mt-4 md:grid-cols-3">
+            <div>
+              <label className="block mb-[0.4rem] text-[0.9rem]" htmlFor="nome-documento">Nome da digitalização</label>
+              <input
+                id="nome-documento"
+                className="w-full p-3 text-[#e8ecf4] bg-[#1d2230] border border-[#2a3142] rounded-lg"
+                type="text"
+                value={nome}
+                onChange={(evento) => setNome(evento.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block mb-[0.4rem] text-[0.9rem]" htmlFor="validade-documento">
+                Data de vencimento
+              </label>
+              <input
+                id="validade-documento"
+                className="w-full p-3 text-[#e8ecf4] bg-[#1d2230] border border-[#2a3142] rounded-lg"
+                type="date"
+                min={dataHoje}
+                value={validade}
+                onChange={(evento) => setValidade(evento.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block mb-[0.4rem] text-[0.9rem]" htmlFor="visibilidade-documento">Privacidade</label>
+              <select
+                id="visibilidade-documento"
+                className="w-full p-3 text-[#e8ecf4] bg-[#1d2230] border border-[#2a3142] rounded-lg"
+                value={visibilidade}
+                onChange={(evento) => setVisibilidade(evento.target.value)}
+              >
+                <option value="privado">Privado</option>
+                <option value="publico">Público</option>
+              </select>
+            </div>
+          </div>
         </div>
 
-        <canvas ref={canvasRef} className="hidden" />
-
-        <div className="grid grid-cols-1 gap-[0.8rem] mt-4 md:grid-cols-3">
-          <div>
-            <label className="block mb-[0.4rem] text-[0.9rem]" htmlFor="nome-documento">Nome da digitalização</label>
-            <input
-              id="nome-documento"
-              className="w-full p-3 text-[#e8ecf4] bg-[#1d2230] border border-[#2a3142] rounded-lg"
-              type="text"
-              value={nome}
-              onChange={(evento) => setNome(evento.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block mb-[0.4rem] text-[0.9rem]" htmlFor="validade-documento">
-              Data de vencimento
-            </label>
-            <input
-              id="validade-documento"
-              className="w-full p-3 text-[#e8ecf4] bg-[#1d2230] border border-[#2a3142] rounded-lg"
-              type="date"
-              min={dataHoje}
-              value={validade}
-              onChange={(evento) => setValidade(evento.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block mb-[0.4rem] text-[0.9rem]" htmlFor="visibilidade-documento">Privacidade</label>
-            <select
-              id="visibilidade-documento"
-              className="w-full p-3 text-[#e8ecf4] bg-[#1d2230] border border-[#2a3142] rounded-lg"
-              value={visibilidade}
-              onChange={(evento) => setVisibilidade(evento.target.value)}
-            >
-              <option value="privado">Privado</option>
-              <option value="publico">Público</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-start gap-[0.8rem] mt-4 sm:flex-row sm:items-stretch sm:justify-end">
+        <div className="flex gap-[0.8rem] mt-4 shrink-0 sm:justify-end">
           <button className="w-full px-4 py-[0.7rem] text-[#e8ecf4] bg-[#1d2230] border border-[#2a3142] rounded-lg cursor-pointer sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed" onClick={onFechar}>
             Cancelar
           </button>
