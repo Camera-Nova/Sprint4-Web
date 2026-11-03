@@ -17,7 +17,6 @@ def criar_dados_iniciais() -> dict:
                 'senha_hash': gerar_hash_senha('Admin123'),
             }
         ],
-        'sessoes': [],
         'documentos': [],
     }
 

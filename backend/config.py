@@ -14,6 +14,8 @@ DURACAO_SESSAO = timedelta(hours=int(os.getenv('DURACAO_SESSAO_HORAS', 24)))
 
 DURACAO_SESSAO_LEMBRAR = timedelta(days=int(os.getenv('DURACAO_SESSAO_LEMBRAR_DIAS', 30)))
 
+JWT_SECRET = os.getenv('JWT_SECRET', 'jovi-scan-segredo-local-apenas-para-dev')
+
 ORIGENS_PERMITIDAS = [
     origem.strip()
     for origem in os.getenv(

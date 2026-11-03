@@ -146,6 +146,7 @@ No build de produção (`npm run build`) vale o `frontend/.env.production`, que 
 | `PASTA_UPLOADS` | `backend/uploads` | Pasta das imagens enviadas |
 | `DURACAO_SESSAO_HORAS` | `24` | Duração da sessão sem "Lembrar-me" |
 | `DURACAO_SESSAO_LEMBRAR_DIAS` | `30` | Duração da sessão com "Lembrar-me" |
+| `JWT_SECRET` | segredo de desenvolvimento | Segredo que assina os tokens de sessão. **Obrigatória na Vercel** |
 
 ### Executar separadamente (opcional)
 
@@ -181,7 +182,7 @@ O frontend e a API ficam no **mesmo projeto da Vercel**:
 - o frontend é gerado com `npm run build` em `frontend/` e servido como site estático (rotas internas, como `/cadastro`, caem no `index.html`);
 - a API roda como função Python (`api/index.py`), que monta o backend em `/api` (ex.: `/api/auth/login`).
 
-As configurações estão em `vercel.json`; não é preciso definir variáveis de ambiente no painel.
+As configurações estão em `vercel.json`. No painel da Vercel, é preciso cadastrar a variável de ambiente `JWT_SECRET` (gere um valor com `openssl rand -hex 32`); sem ela, a API não inicia.
 
 Para publicar pelo terminal, na raiz do projeto:
 
@@ -193,7 +194,7 @@ vercel --prod
 
 Ou importe o repositório em <https://vercel.com/new> mantendo a raiz do projeto como *Root Directory*.
 
-> **Limitação:** na Vercel só a pasta `/tmp` aceita escrita, então o banco simulado e as imagens ficam lá e **podem ser apagados** quando a função reinicia (por exemplo, depois de alguns minutos sem uso). O usuário de teste `admin@jovi.com` / `Admin123` é recriado automaticamente; contas e documentos novos podem sumir. Para guardar os dados de forma permanente, seria preciso trocar o banco simulado por um banco de dados real.
+> **Limitação:** na Vercel só a pasta `/tmp` aceita escrita, então o banco simulado e as imagens ficam lá e **podem ser apagados** quando a função reinicia (por exemplo, depois de alguns minutos sem uso). O usuário de teste `admin@jovi.com` / `Admin123` é recriado automaticamente; contas e documentos novos podem sumir. Como cada instância da função tem o seu próprio `/tmp`, esses dados também podem aparecer e desaparecer entre requisições. A sessão não sofre com isso: ela é um token JWT assinado, validado sem consultar o banco, então o login do usuário de teste continua valendo em qualquer instância. Para guardar os dados de forma permanente, seria preciso trocar o banco simulado por um banco de dados real.
 
 ---
 
@@ -221,5 +222,6 @@ Neste projeto foi utilizada Inteligência Artificial (Claude, da Anthropic, via 
 - **Juntar os comandos do backend e do frontend**: criar o script `scripts/dev.js` e o `package.json` da raiz, para que `npm run dev` suba a API e a aplicação ao mesmo tempo.
 - **Organizar as pastas**: estruturar o projeto em `frontend/` e `backend/` e separar o código em `hooks/`, `routes/` e `services/` no frontend, e `banco/`, `modelos/` e `rotas/` no backend.
 - **Refatorar o código**: melhorar a organização e a legibilidade dos componentes e das rotas, mantendo o funcionamento da aplicação.
+- **Corrigir o login na Vercel**: diagnosticar a perda de sessão entre instâncias da função e trocar a sessão guardada no servidor por um token JWT assinado.
 
 A IA não desenvolveu as funcionalidades principais da aplicação: seu papel foi refatorar o código já existente para melhorar a legibilidade e criar pequenos ajustes pontuais (o script que une os comandos de execução). Tudo o que foi feito com apoio da IA foi revisado pelos integrantes do grupo.

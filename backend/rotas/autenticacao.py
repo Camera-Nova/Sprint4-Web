@@ -12,39 +12,18 @@ from modelos.autenticacao import (
     MensagemSaida,
     UsuarioSaida,
 )
-from seguranca import gerar_hash_senha, gerar_token, verificar_senha
+from seguranca import gerar_hash_senha, gerar_token_sessao, verificar_senha
 from tentativas import limpar_tentativas, registrar_falha, verificar_bloqueio
 
 roteador = APIRouter(prefix='/auth', tags=['Autenticação'])
 
 
-def remover_sessoes_expiradas(momento: datetime) -> None:
-    for sessao in banco.listar('sessoes'):
-        expira_em = sessao.get('expira_em')
-
-        if not expira_em or datetime.fromisoformat(expira_em) <= momento:
-            banco.remover('sessoes', token=sessao['token'])
-
-
 def criar_sessao(usuario: dict, lembrar: bool) -> LoginSaida:
     entrou_em = datetime.now(timezone.utc)
     expira_em = entrou_em + (DURACAO_SESSAO_LEMBRAR if lembrar else DURACAO_SESSAO)
-    token = gerar_token()
-
-    remover_sessoes_expiradas(entrou_em)
-
-    banco.inserir(
-        'sessoes',
-        {
-            'token': token,
-            'usuario_id': usuario['id'],
-            'entrou_em': entrou_em.isoformat(),
-            'expira_em': expira_em.isoformat(),
-        },
-    )
 
     return LoginSaida(
-        token=token,
+        token=gerar_token_sessao(usuario, expira_em),
         usuario=UsuarioSaida(**usuario),
         entrou_em=entrou_em,
         expira_em=expira_em,
@@ -93,7 +72,6 @@ def usuario_logado(usuario: dict = Depends(obter_usuario_atual)):
     return UsuarioSaida(**usuario)
 
 
-@roteador.post('/logout', response_model=MensagemSaida)
-def sair(token: str = Depends(obter_token)):
-    banco.remover('sessoes', token=token)
+@roteador.post('/logout', response_model=MensagemSaida, dependencies=[Depends(obter_token)])
+def sair():
     return MensagemSaida(mensagem='Sessão encerrada.')

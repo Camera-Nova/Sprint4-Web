@@ -9,6 +9,9 @@ from fastapi import FastAPI
 os.environ.setdefault('CAMINHO_DADOS', '/tmp/jovi/dados.json')
 os.environ.setdefault('PASTA_UPLOADS', '/tmp/jovi/uploads')
 
+if not os.getenv('JWT_SECRET'):
+    raise RuntimeError('Defina a variável de ambiente JWT_SECRET no projeto da Vercel.')
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'backend'))
 
 from main import app as api  # noqa: E402

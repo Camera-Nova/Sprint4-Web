@@ -1,6 +1,13 @@
 import hashlib
 import hmac
 import secrets
+from datetime import datetime
+
+import jwt
+
+from config import JWT_SECRET
+
+ALGORITMO_JWT = 'HS256'
 
 ITERACOES = 200_000
 
@@ -19,3 +26,20 @@ def verificar_senha(senha: str, hash_salvo: str) -> bool:
 
 def gerar_token() -> str:
     return secrets.token_urlsafe(32)
+
+
+def gerar_token_sessao(usuario: dict, expira_em: datetime) -> str:
+    return jwt.encode(
+        {'sub': str(usuario['id']), 'email': usuario['email'], 'exp': expira_em},
+        JWT_SECRET,
+        algorithm=ALGORITMO_JWT,
+    )
+
+
+def ler_token_sessao(token: str) -> dict:
+    return jwt.decode(
+        token,
+        JWT_SECRET,
+        algorithms=[ALGORITMO_JWT],
+        options={'require': ['exp', 'sub', 'email']},
+    )
