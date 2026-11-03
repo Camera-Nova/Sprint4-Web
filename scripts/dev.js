@@ -42,6 +42,13 @@ const encontrarPython = () => {
 }
 
 const prepararBackend = () => {
+  const arquivoEnv = join(pastaBackend, '.env')
+
+  if (!existsSync(arquivoEnv)) {
+    copyFileSync(join(pastaBackend, '.env.example'), arquivoEnv)
+    registrar('dev', 'Arquivo backend/.env criado. Preencha as credenciais do Supabase.')
+  }
+
   if (existsSync(pythonVenv)) return
 
   const python = encontrarPython()

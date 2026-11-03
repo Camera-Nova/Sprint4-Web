@@ -30,9 +30,3 @@ __pycache__/
 .venv/
 .env
 
-# Banco simulado (gerado ao iniciar a API)
-backend/banco/dados.json
-backend/banco/dados.tmp
-
-# Imagens enviadas para a API
-backend/uploads/

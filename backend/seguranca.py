@@ -24,10 +24,6 @@ def verificar_senha(senha: str, hash_salvo: str) -> bool:
     return hmac.compare_digest(hash_senha.hex(), hash_esperado)
 
 
-def gerar_token() -> str:
-    return secrets.token_urlsafe(32)
-
-
 def gerar_token_sessao(usuario: dict, expira_em: datetime) -> str:
     return jwt.encode(
         {'sub': str(usuario['id']), 'email': usuario['email'], 'exp': expira_em},
@@ -42,4 +38,30 @@ def ler_token_sessao(token: str) -> dict:
         JWT_SECRET,
         algorithms=[ALGORITMO_JWT],
         options={'require': ['exp', 'sub', 'email']},
+    )
+
+
+def gerar_token_liberacao(
+    usuario_id: int,
+    documento_ids: set[str] | None,
+    expira_em: datetime,
+) -> str:
+    return jwt.encode(
+        {
+            'tipo': 'liberacao',
+            'sub': str(usuario_id),
+            'documentos': None if documento_ids is None else sorted(documento_ids),
+            'exp': expira_em,
+        },
+        JWT_SECRET,
+        algorithm=ALGORITMO_JWT,
+    )
+
+
+def ler_token_liberacao(token: str) -> dict:
+    return jwt.decode(
+        token,
+        JWT_SECRET,
+        algorithms=[ALGORITMO_JWT],
+        options={'require': ['exp', 'sub', 'tipo']},
     )

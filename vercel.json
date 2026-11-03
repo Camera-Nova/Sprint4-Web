@@ -7,7 +7,7 @@
   "functions": {
     "api/index.py": {
       "includeFiles": "backend/**",
-      "excludeFiles": "{backend/.venv/**,backend/uploads/**,backend/banco/dados.json,**/__pycache__/**,frontend/**}"
+      "excludeFiles": "{backend/.venv/**,backend/.env,**/__pycache__/**,frontend/**}"
     }
   },
   "rewrites": [

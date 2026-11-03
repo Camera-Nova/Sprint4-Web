@@ -2,11 +2,16 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 PASTA_BACKEND = Path(__file__).resolve().parent
 
-CAMINHO_DADOS = Path(os.getenv('CAMINHO_DADOS', PASTA_BACKEND / 'banco' / 'dados.json'))
+load_dotenv(PASTA_BACKEND / '.env')
 
-PASTA_UPLOADS = Path(os.getenv('PASTA_UPLOADS', PASTA_BACKEND / 'uploads'))
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_SERVICE_KEY = os.getenv('SUPABASE_SERVICE_KEY')
+
+SUPABASE_BUCKET = os.getenv('SUPABASE_BUCKET', 'documentos')
 
 TAMANHO_MAXIMO_IMAGEM = 5 * 1024 * 1024
 
